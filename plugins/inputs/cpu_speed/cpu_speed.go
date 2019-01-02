@@ -13,7 +13,19 @@ import (
 
 var (
 	cpuSpeedPath = "/sys/devices/system/cpu"
-	statuses = []string{"cpuinfo_cur_freq", "scaling_governor", "scaling_driver"}
+	perCpuIntStatuses = []string{"scaling_cur_freq",
+	  "scaling_min_freq",
+	  "scaling_max_freq",
+        }
+	perCpuStringStatuses = []string{
+	  "scaling_governor",
+	  "scaling_driver",
+	  "energy_performance_preference",
+        }
+	globalStatuses = []string{"no_turbo",
+	  "max_perf_pct",
+	  "min_perf_pct",
+        }
 )
 
 type CpuSpeed struct {
@@ -29,6 +41,7 @@ func (cs *CpuSpeed) Description() string {
 }
 
 func (cs *CpuSpeed) Gather(acc telegraf.Accumulator) error {
+	// collect per-CPU stats
 	for i := 0; i < cs.numberOfCpus; i++ {
 		fields := make(map[string]interface{})
 		tags := make(map[string]string)
@@ -42,24 +55,35 @@ func (cs *CpuSpeed) Gather(acc telegraf.Accumulator) error {
 		}
 		fields["online"] = onlineVal
 		cpufreqPath := filepath.Join(cpuSpeedPath, "cpu" + cpuId, "cpufreq")
-		for _, status := range statuses {
-			if status == "cpuinfo_cur_freq" {
-				statusVal, err := readUintFromFile(filepath.Join(cpufreqPath, status))
-				if err != nil {
-					return err
-				}
-				fields[status] = statusVal
-			} else {
-				statusVal, err := readStringFromFile(filepath.Join(cpufreqPath, status))
-				if err != nil {
-					return err
-				}
-				fields[status] = statusVal
+		for _, status := range perCpuIntStatuses {
+			statusVal, err := readUintFromFile(filepath.Join(cpufreqPath, status))
+			if err != nil {
+				return err
 			}
-
+			fields[status] = statusVal
+		}
+		for _, status := range perCpuStringStatuses {
+			statusVal, err := readStringFromFile(filepath.Join(cpufreqPath, status))
+			if err != nil {
+				return err
+			}
+			fields[status] = statusVal
 		}
 		acc.AddFields("cpu_speed", fields, tags)
 	}
+	// collect global stats
+	globalPath := filepath.Join(cpuSpeedPath, "intel_pstate")
+	fields := make(map[string]interface{})
+	tags := make(map[string]string)
+	tags["cpu"] = "overall"
+	for _, status := range globalStatuses {
+		statusVal, err := readUintFromFile(filepath.Join(globalPath, status))
+		if err != nil {
+			return err
+		}
+		fields[status] = statusVal
+	}
+	acc.AddFields("cpu_speed", fields, tags)
 
 	return nil
 }
