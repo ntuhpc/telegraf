@@ -16,21 +16,31 @@ import (
 
 var (
 	measurement = "nvidia_smi"
-	metrics     = "fan.speed,memory.total,memory.used,memory.free,pstate,temperature.gpu,name,uuid,compute_mode,utilization.gpu,utilization.memory,index,power.draw"
+	metrics     = "fan.speed,memory.total,memory.used,memory.free,pstate,temperature.gpu,name,uuid,compute_mode,utilization.gpu,utilization.memory,index,power.draw,clocks.applications.graphics,clocks.applications.memory,ecc.mode.current,persistence_mode,pcie.link.width.current,pcie.link.gen.current,clocks.current.sm,clocks.current.memory,enforced.power.limit,power.limit"
 	metricNames = [][]string{
 		{"fan_speed", "integer"},
 		{"memory_total", "integer"},
 		{"memory_used", "integer"},
 		{"memory_free", "integer"},
-		{"pstate", "tag"},
+		{"pstate", "string"},
 		{"temperature_gpu", "integer"},
 		{"name", "tag"},
 		{"uuid", "tag"},
-		{"compute_mode", "tag"},
+		{"compute_mode", "string"},
 		{"utilization_gpu", "integer"},
 		{"utilization_memory", "integer"},
 		{"index", "tag"},
 		{"power_draw", "float"},
+		{"clocks_applications_graphics", "integer"},
+		{"clocks_applications_memory", "integer"},
+		{"ecc_mode_current", "string"},
+		{"persistence_mode", "string"},
+		{"pcie_link_width_current", "integer"},
+		{"pcie_link_gen_current", "integer"},
+		{"clocks_current_sm", "integer"},
+		{"clocks_current_memory", "integer"},
+		{"enforced_power_limit", "float"},
+		{"power_limit", "float"},
 	}
 )
 
@@ -154,6 +164,11 @@ func parseLine(line string) (map[string]string, map[string]interface{}, error) {
 					return tags, fields, err
 				}
 				fields[m[0]] = out
+			}
+
+			// Parse the strings
+			if m[1] == "string" {
+				fields[m[0]] = col
 			}
 		}
 
