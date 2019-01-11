@@ -78,6 +78,11 @@ func (s *NetIOStats) Gather(acc telegraf.Accumulator) error {
 			if iface.Flags&net.FlagUp == 0 {
 				continue
 			}
+
+			// ignore IPoIB interfaces in favor of the infiniband plugin
+			if strings.HasPrefix(io.Name, "ib") {
+				continue
+			}
 		}
 
 		tags := map[string]string{
